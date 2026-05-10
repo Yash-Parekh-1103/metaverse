@@ -1,19 +1,30 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import axios from 'axios';
-import { ChevronLeft, CalendarDays, User } from 'lucide-react';
+import { ChevronLeft, CalendarDays, User, Heart, MessageCircle } from 'lucide-react';
 
 const PostDetail = () => {
   const { id } = useParams();
   const [post, setPost] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [comment, setComment] = useState('');
+  const [liked, setLiked] = useState(false);
+  const [likesCount, setLikesCount] = useState(0);
 
   useEffect(() => {
     const fetchPost = async () => {
       try {
-        const res = await axios.get(`http://localhost:3000/api/posts/${id}`);
-        setPost(res.data);
+        const token = localStorage.getItem('token');
+        const [postRes, likedRes] = await Promise.all([
+          axios.get(`http://localhost:3000/api/posts/${id}`),
+          axios.get('http://localhost:3000/api/users/me/liked-posts', {
+            headers: { Authorization: `Bearer ${token}` }
+          })
+        ]);
+        setPost(postRes.data);
+        setLikesCount(postRes.data.likedBy?.length || 0);
+        setLiked(likedRes.data.some((likedPost) => likedPost._id === postRes.data._id));
       } catch (err) {
         setError(err.response?.data?.message || 'Unable to load this post.');
       } finally {
@@ -23,6 +34,40 @@ const PostDetail = () => {
 
     fetchPost();
   }, [id]);
+
+  const handleLike = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.post(
+        `http://localhost:3000/api/posts/${id}/like`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setLiked(res.data.liked);
+      setLikesCount(res.data.likesCount);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Unable to update like');
+    }
+  };
+
+  const handleCommentSubmit = async (event) => {
+    event.preventDefault();
+    if (!comment.trim()) return;
+
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.post(
+        `http://localhost:3000/api/posts/${id}/comments`,
+        { content: comment },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      setPost((prevPost) => ({ ...prevPost, comments: [...(prevPost.comments || []), res.data] }));
+      setComment('');
+    } catch (err) {
+      setError(err.response?.data?.message || 'Unable to add comment');
+    }
+  };
 
   if (loading) {
     return (
@@ -75,6 +120,52 @@ const PostDetail = () => {
           </div>
 
           <p className="whitespace-pre-line leading-8 text-gray-800">{post.content}</p>
+
+          <div className="rounded-lg border border-gray-100 bg-gray-50 p-4">
+            <div className="mb-4 flex items-center gap-5">
+              <button type="button" onClick={handleLike} className="inline-flex items-center gap-2 text-sm font-medium text-gray-700">
+                <Heart className={`h-5 w-5 ${liked ? 'fill-current text-rose-500' : 'text-gray-600'}`} />
+                {likesCount}
+              </button>
+              <a href="#comments" className="inline-flex items-center gap-2 text-sm font-medium text-gray-700">
+                <MessageCircle className="h-5 w-5 text-gray-600" />
+                {post.comments?.length || 0}
+              </a>
+            </div>
+
+            <form onSubmit={handleCommentSubmit} className="flex items-center gap-2 border-t border-gray-200 pt-4">
+              <input
+                type="text"
+                value={comment}
+                onChange={(event) => setComment(event.target.value)}
+                placeholder="Add a comment..."
+                className="flex-1 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
+              />
+              <button
+                type="submit"
+                className="rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
+              >
+                Post
+              </button>
+            </form>
+          </div>
+
+          <div id="comments" className="space-y-3 border-t border-gray-100 pt-5">
+            <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-500">Comments</h3>
+            {(post.comments || []).length === 0 ? (
+              <p className="text-sm text-gray-500">No comments yet.</p>
+            ) : (
+              post.comments.map((item) => (
+                <div key={item._id} className="rounded-md border border-gray-100 bg-white p-3">
+                  <p className="text-sm text-gray-800">
+                    <span className="mr-2 font-semibold">{item.user?.name || 'User'}</span>
+                    {item.content}
+                  </p>
+                  <p className="mt-1 text-xs text-gray-400">{new Date(item.createdAt).toLocaleString()}</p>
+                </div>
+              ))
+            )}
+          </div>
         </div>
       </article>
     </div>

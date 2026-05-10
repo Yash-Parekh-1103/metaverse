@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Link, useNavigate } from 'react-router-dom';
-import { Settings, Grid, Bookmark, Tag, ChevronLeft, Pencil, Trash2 } from 'lucide-react';
+import { Settings, Grid, Bookmark, Heart, ChevronLeft, Pencil, Trash2 } from 'lucide-react';
 
 const Profile = () => {
   const [userData, setUserData] = useState(null);
   const [posts, setPosts] = useState([]);
   const [savedPosts, setSavedPosts] = useState([]);
+  const [likedPosts, setLikedPosts] = useState([]);
   const [activeTab, setActiveTab] = useState('posts');
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({ name: '', email: '' });
@@ -26,6 +27,7 @@ const Profile = () => {
         setUserData(res.data.user);
         setPosts(res.data.posts);
         setSavedPosts(res.data.savedPosts || []);
+        setLikedPosts(res.data.likedPosts || []);
         setFormData({ name: res.data.user.name, email: res.data.user.email });
       } catch (err) {
         console.error('Error fetching profile', err);
@@ -96,6 +98,7 @@ const Profile = () => {
 
       setPosts((prevPosts) => prevPosts.filter((post) => post._id !== postId));
       setSavedPosts((prevPosts) => prevPosts.filter((post) => post._id !== postId));
+      setLikedPosts((prevPosts) => prevPosts.filter((post) => post._id !== postId));
       if (editingPostId === postId) {
         setIsPostEditing(false);
         setEditingPostId('');
@@ -143,6 +146,7 @@ const Profile = () => {
           <div className="flex justify-center md:justify-start space-x-8 text-sm">
             <span><strong>{posts.length}</strong> posts</span>
             <span><strong>{savedPosts.length}</strong> saved</span>
+            <span><strong>{likedPosts.length}</strong> liked</span>
             <span><strong>0</strong> followers</span>
             <span><strong>0</strong> following</span>
           </div>
@@ -205,18 +209,24 @@ const Profile = () => {
           <Bookmark className="w-3 h-3" />
           <span>Saved</span>
         </button>
-        <div className="pt-4 flex items-center space-x-2 text-xs font-bold tracking-widest uppercase text-gray-400 cursor-pointer">
-          <Tag className="w-3 h-3" />
-          <span>Tagged</span>
-        </div>
+        <button
+          type="button"
+          onClick={() => setActiveTab('liked')}
+          className={`pt-4 flex items-center space-x-2 text-xs font-bold tracking-widest uppercase cursor-pointer ${
+            activeTab === 'liked' ? 'border-t border-black text-black -mt-[1px]' : 'text-gray-400'
+          }`}
+        >
+          <Heart className="w-3 h-3" />
+          <span>Liked Blogs</span>
+        </button>
       </div>
 
       {/* Posts Grid */}
       <div className="grid grid-cols-3 gap-1 md:gap-8 mt-8">
-        {(activeTab === 'posts' ? posts : savedPosts).length === 0 ? (
+        {(activeTab === 'posts' ? posts : activeTab === 'saved' ? savedPosts : likedPosts).length === 0 ? (
           <div className="col-span-3 text-center py-20 text-gray-500 italic">No posts yet.</div>
         ) : (
-          (activeTab === 'posts' ? posts : savedPosts).map((post) => (
+          (activeTab === 'posts' ? posts : activeTab === 'saved' ? savedPosts : likedPosts).map((post) => (
             <div
               key={post._id}
               className="relative aspect-square bg-gray-100 border border-gray-200 group cursor-pointer overflow-hidden"

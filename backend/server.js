@@ -25,7 +25,10 @@ const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
   name: { type: String, required: true },
-  savedPosts: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Post' }]
+  savedPosts: {
+    type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Post' }],
+    default: []
+  }
 })
 
 const User = mongoose.model('User', userSchema)
@@ -36,6 +39,18 @@ const postSchema = new mongoose.Schema({
   content: { type: String, required: true },
   category: { type: String },
   author: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  likedBy: {
+    type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+    default: []
+  },
+  comments: {
+    type: [{
+      user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+      content: { type: String, required: true },
+      createdAt: { type: Date, default: Date.now }
+    }],
+    default: []
+  },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }
 })
@@ -109,7 +124,10 @@ app.get('/api/users/me', auth, async (req, res) => {
     const savedPosts = await Post.find({ _id: { $in: user.savedPosts } })
       .populate('author', 'name')
       .sort({ createdAt: -1 })
-    res.json({ user, posts, savedPosts })
+    const likedPosts = await Post.find({ likedBy: req.userId })
+      .populate('author', 'name')
+      .sort({ createdAt: -1 })
+    res.json({ user, posts, savedPosts, likedPosts })
   } catch {
     res.status(500).json({ message: 'Server error' })
   }
@@ -162,12 +180,68 @@ app.get('/api/posts/:id', async (req, res) => {
       return res.status(400).json({ message: 'Invalid post id' })
     }
 
-    const post = await Post.findById(id).populate('author', 'name email')
+    const post = await Post.findById(id)
+      .populate('author', 'name email')
+      .populate('comments.user', 'name')
     if (!post) {
       return res.status(404).json({ message: 'Post not found' })
     }
 
     res.json(post)
+  } catch {
+    res.status(500).json({ message: 'Server error' })
+  }
+})
+
+app.post('/api/posts/:id/like', auth, async (req, res) => {
+  try {
+    const { id } = req.params
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: 'Invalid post id' })
+    }
+
+    const post = await Post.findById(id)
+    if (!post) {
+      return res.status(404).json({ message: 'Post not found' })
+    }
+
+    const alreadyLiked = post.likedBy.some((likedUserId) => likedUserId.toString() === req.userId)
+    if (alreadyLiked) {
+      post.likedBy = post.likedBy.filter((likedUserId) => likedUserId.toString() !== req.userId)
+      await post.save()
+      return res.json({ liked: false, likesCount: post.likedBy.length })
+    }
+
+    post.likedBy.push(req.userId)
+    await post.save()
+    res.json({ liked: true, likesCount: post.likedBy.length })
+  } catch {
+    res.status(500).json({ message: 'Server error' })
+  }
+})
+
+app.post('/api/posts/:id/comments', auth, async (req, res) => {
+  try {
+    const { id } = req.params
+    const { content } = req.body
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: 'Invalid post id' })
+    }
+    if (!content?.trim()) {
+      return res.status(400).json({ message: 'Comment content is required' })
+    }
+
+    const post = await Post.findById(id)
+    if (!post) {
+      return res.status(404).json({ message: 'Post not found' })
+    }
+
+    post.comments.push({ user: req.userId, content: content.trim() })
+    await post.save()
+
+    const updatedPost = await Post.findById(id).populate('comments.user', 'name')
+    const latestComment = updatedPost.comments[updatedPost.comments.length - 1]
+    res.status(201).json(latestComment)
   } catch {
     res.status(500).json({ message: 'Server error' })
   }
@@ -269,6 +343,21 @@ app.get('/api/users/me/saved-posts', auth, async (req, res) => {
       .populate('author', 'name')
       .sort({ createdAt: -1 })
     res.json(savedPosts)
+  } catch {
+    res.status(500).json({ message: 'Server error' })
+  }
+})
+
+app.get('/api/users/me/liked-posts', auth, async (req, res) => {
+  try {
+    const user = await User.findById(req.userId).select('_id')
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' })
+    }
+    const likedPosts = await Post.find({ likedBy: req.userId })
+      .populate('author', 'name')
+      .sort({ createdAt: -1 })
+    res.json(likedPosts)
   } catch {
     res.status(500).json({ message: 'Server error' })
   }
