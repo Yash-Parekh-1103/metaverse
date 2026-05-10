@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { PlusSquare, User, LogOut, Heart, MessageCircle, Send, Bookmark } from 'lucide-react';
 
 const BlogList = () => {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchPosts = async () => {
@@ -53,7 +54,11 @@ const BlogList = () => {
       ) : (
         <div className="space-y-4">
           {posts.map(post => (
-            <article key={post._id} className="bg-white border border-gray-300 rounded-sm">
+            <article
+              key={post._id}
+              className="bg-white border border-gray-300 rounded-sm cursor-pointer"
+              onClick={() => navigate(`/posts/${post._id}`)}
+            >
               {/* Post Header */}
               <div className="flex items-center p-3">
                 <div className="w-8 h-8 bg-gradient-to-tr from-yellow-400 to-purple-600 rounded-full flex items-center justify-center text-white text-xs font-bold mr-3">

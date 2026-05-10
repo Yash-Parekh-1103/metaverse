@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Settings, Grid, Bookmark, Tag, ChevronLeft } from 'lucide-react';
 
 const Profile = () => {
@@ -9,6 +9,7 @@ const Profile = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({ name: '', email: '' });
   const [message, setMessage] = useState('');
+  const navigate = useNavigate();
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -140,7 +141,11 @@ const Profile = () => {
           <div className="col-span-3 text-center py-20 text-gray-500 italic">No posts yet.</div>
         ) : (
           posts.map(post => (
-            <div key={post._id} className="relative aspect-square bg-gray-100 border border-gray-200 group cursor-pointer overflow-hidden">
+            <div
+              key={post._id}
+              className="relative aspect-square bg-gray-100 border border-gray-200 group cursor-pointer overflow-hidden"
+              onClick={() => navigate(`/posts/${post._id}`)}
+            >
                <div className="absolute inset-0 flex flex-col items-center justify-center p-2 text-center transition-transform duration-500 group-hover:scale-110">
                   <h4 className="text-[10px] md:text-xs font-bold uppercase text-gray-400 mb-1">{post.category || 'BLOG'}</h4>
                   <p className="text-xs md:text-lg font-serif italic text-gray-800 line-clamp-2 px-2">{post.title}</p>

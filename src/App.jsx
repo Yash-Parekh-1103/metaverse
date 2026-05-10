@@ -6,6 +6,7 @@ import Login from './features/auth/Login';
 import Profile from './features/auth/Profile';
 import BlogList from './features/blog/BlogList';
 import CreateBlog from './features/blog/CreateBlog';
+import PostDetail from './features/blog/PostDetail';
 import './App.css';
 
 function App() {
@@ -89,6 +90,14 @@ function App() {
           element={
             <ProtectedRoute>
               <CreateBlog />
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/posts/:id" 
+          element={
+            <ProtectedRoute>
+              <PostDetail />
             </ProtectedRoute>
           } 
         />

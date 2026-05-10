@@ -147,6 +147,24 @@ app.get('/api/posts', async (_req, res) => {
   }
 })
 
+app.get('/api/posts/:id', async (req, res) => {
+  try {
+    const { id } = req.params
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: 'Invalid post id' })
+    }
+
+    const post = await Post.findById(id).populate('author', 'name email')
+    if (!post) {
+      return res.status(404).json({ message: 'Post not found' })
+    }
+
+    res.json(post)
+  } catch (error) {
+    res.status(500).json({ message: 'Server error' })
+  }
+})
+
 app.get('/health', (_req, res) => {
   const isConnected = mongoose.connection.readyState === 1
   res.status(200).json({ status: 'ok', mongodb: isConnected ? 'connected' : 'disconnected' })
