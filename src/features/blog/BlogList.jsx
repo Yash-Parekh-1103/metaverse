@@ -5,22 +5,52 @@ import { PlusSquare, User, LogOut, Heart, MessageCircle, Send, Bookmark } from '
 
 const BlogList = () => {
   const [posts, setPosts] = useState([]);
+  const [savedPostIds, setSavedPostIds] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchPosts = async () => {
+    const fetchPostsAndSaved = async () => {
       try {
-        const res = await axios.get('http://localhost:3000/api/posts');
-        setPosts(res.data);
+        const token = localStorage.getItem('token');
+        const [postsRes, savedRes] = await Promise.all([
+          axios.get('http://localhost:3000/api/posts'),
+          axios.get('http://localhost:3000/api/users/me/saved-posts', {
+            headers: { Authorization: `Bearer ${token}` }
+          })
+        ]);
+        setPosts(postsRes.data);
+        setSavedPostIds(savedRes.data.map((post) => post._id));
       } catch (err) {
         console.error('Error fetching posts', err);
       } finally {
         setLoading(false);
       }
     };
-    fetchPosts();
+
+    fetchPostsAndSaved();
   }, []);
+
+  const toggleSavePost = async (postId, event) => {
+    event.stopPropagation();
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.post(
+        `http://localhost:3000/api/posts/${postId}/save`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      setSavedPostIds((prevIds) => {
+        if (res.data.saved) {
+          return prevIds.includes(postId) ? prevIds : [...prevIds, postId];
+        }
+        return prevIds.filter((id) => id !== postId);
+      });
+    } catch (err) {
+      console.error('Error saving post', err);
+    }
+  };
 
   const logout = () => {
     localStorage.removeItem('token');
@@ -85,7 +115,11 @@ const BlogList = () => {
                     <MessageCircle className="w-6 h-6 cursor-pointer" />
                     <Send className="w-6 h-6 cursor-pointer" />
                   </div>
-                  <Bookmark className="w-6 h-6 cursor-pointer" />
+                  <button type="button" onClick={(event) => toggleSavePost(post._id, event)}>
+                    <Bookmark
+                      className={`w-6 h-6 cursor-pointer ${savedPostIds.includes(post._id) ? 'fill-current text-black' : ''}`}
+                    />
+                  </button>
                 </div>
 
                 {/* Post Content */}

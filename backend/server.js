@@ -24,7 +24,8 @@ app.use(express.json())
 const userSchema = new mongoose.Schema({
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
-  name: { type: String, required: true }
+  name: { type: String, required: true },
+  savedPosts: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Post' }]
 })
 
 const User = mongoose.model('User', userSchema)
@@ -35,7 +36,8 @@ const postSchema = new mongoose.Schema({
   content: { type: String, required: true },
   category: { type: String },
   author: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  createdAt: { type: Date, default: Date.now }
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now }
 })
 
 const Post = mongoose.model('Post', postSchema)
@@ -100,9 +102,15 @@ app.post('/api/auth/login', async (req, res) => {
 app.get('/api/users/me', auth, async (req, res) => {
   try {
     const user = await User.findById(req.userId).select('-password')
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' })
+    }
     const posts = await Post.find({ author: req.userId }).sort({ createdAt: -1 })
-    res.json({ user, posts })
-  } catch (error) {
+    const savedPosts = await Post.find({ _id: { $in: user.savedPosts } })
+      .populate('author', 'name')
+      .sort({ createdAt: -1 })
+    res.json({ user, posts, savedPosts })
+  } catch {
     res.status(500).json({ message: 'Server error' })
   }
 })
@@ -116,7 +124,7 @@ app.put('/api/users/me', auth, async (req, res) => {
       { new: true }
     ).select('-password')
     res.json(user)
-  } catch (error) {
+  } catch {
     res.status(500).json({ message: 'Server error' })
   }
 })
@@ -142,7 +150,7 @@ app.get('/api/posts', async (_req, res) => {
   try {
     const posts = await Post.find().populate('author', 'name').sort({ createdAt: -1 })
     res.json(posts)
-  } catch (error) {
+  } catch {
     res.status(500).json({ message: 'Server error' })
   }
 })
@@ -160,7 +168,108 @@ app.get('/api/posts/:id', async (req, res) => {
     }
 
     res.json(post)
-  } catch (error) {
+  } catch {
+    res.status(500).json({ message: 'Server error' })
+  }
+})
+
+app.put('/api/posts/:id', auth, async (req, res) => {
+  try {
+    const { id } = req.params
+    const { title, content, category } = req.body
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: 'Invalid post id' })
+    }
+
+    const post = await Post.findById(id)
+    if (!post) {
+      return res.status(404).json({ message: 'Post not found' })
+    }
+    if (post.author.toString() !== req.userId) {
+      return res.status(403).json({ message: 'You can only update your own posts' })
+    }
+    if (!title?.trim() || !content?.trim()) {
+      return res.status(400).json({ message: 'Title and content are required' })
+    }
+
+    post.title = title.trim()
+    post.content = content.trim()
+    post.category = category?.trim() || ''
+    post.updatedAt = new Date()
+    await post.save()
+
+    res.json(post)
+  } catch {
+    res.status(500).json({ message: 'Server error' })
+  }
+})
+
+app.delete('/api/posts/:id', auth, async (req, res) => {
+  try {
+    const { id } = req.params
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: 'Invalid post id' })
+    }
+
+    const post = await Post.findById(id)
+    if (!post) {
+      return res.status(404).json({ message: 'Post not found' })
+    }
+    if (post.author.toString() !== req.userId) {
+      return res.status(403).json({ message: 'You can only delete your own posts' })
+    }
+
+    await Post.deleteOne({ _id: id })
+    await User.updateMany({}, { $pull: { savedPosts: post._id } })
+    res.json({ message: 'Post deleted successfully' })
+  } catch {
+    res.status(500).json({ message: 'Server error' })
+  }
+})
+
+app.post('/api/posts/:id/save', auth, async (req, res) => {
+  try {
+    const { id } = req.params
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: 'Invalid post id' })
+    }
+
+    const post = await Post.findById(id)
+    if (!post) {
+      return res.status(404).json({ message: 'Post not found' })
+    }
+
+    const user = await User.findById(req.userId)
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' })
+    }
+
+    const isAlreadySaved = user.savedPosts.some((savedPostId) => savedPostId.toString() === id)
+    if (isAlreadySaved) {
+      user.savedPosts = user.savedPosts.filter((savedPostId) => savedPostId.toString() !== id)
+      await user.save()
+      return res.json({ saved: false, message: 'Post removed from saved posts' })
+    }
+
+    user.savedPosts.push(post._id)
+    await user.save()
+    res.json({ saved: true, message: 'Post saved successfully' })
+  } catch {
+    res.status(500).json({ message: 'Server error' })
+  }
+})
+
+app.get('/api/users/me/saved-posts', auth, async (req, res) => {
+  try {
+    const user = await User.findById(req.userId).select('savedPosts')
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' })
+    }
+    const savedPosts = await Post.find({ _id: { $in: user.savedPosts } })
+      .populate('author', 'name')
+      .sort({ createdAt: -1 })
+    res.json(savedPosts)
+  } catch {
     res.status(500).json({ message: 'Server error' })
   }
 })
