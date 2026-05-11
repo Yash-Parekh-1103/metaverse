@@ -183,16 +183,6 @@ const Profile = () => {
                   required
                 />
               </div>
-              <div className="space-y-1">
-                <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">Email Address</label>
-                <input
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:border-slate-400 focus:outline-none"
-                  required
-                />
-              </div>
               <button type="submit" className="mt-1 inline-flex w-fit items-center rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800">
                 Save Changes
               </button>
