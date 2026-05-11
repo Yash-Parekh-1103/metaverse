@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { Link, useNavigate } from 'react-router-dom';
-import { Settings, Grid, Bookmark, Heart, ChevronLeft, Pencil, Trash2 } from 'lucide-react';
+import { Settings, LayoutGrid, Bookmark, Heart, ChevronLeft, PencilLine, Trash2, UserRound, Mail, FileText } from 'lucide-react';
 
 const Profile = () => {
   const [userData, setUserData] = useState(null);
@@ -111,211 +111,255 @@ const Profile = () => {
     }
   };
 
-  if (!userData) return <div className="flex justify-center pt-20"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div></div>;
+  if (!userData) return <div className="flex justify-center pt-20"><div className="h-8 w-8 animate-spin rounded-full border-b-2 border-slate-900"></div></div>;
+
+  const visiblePosts = activeTab === 'posts' ? posts : activeTab === 'saved' ? savedPosts : likedPosts;
+  const handle = userData.email.split('@')[0];
 
   return (
-    <div className="max-w-[935px] mx-auto px-4 pb-20 pt-10">
-      {/* Header / Nav */}
-      <div className="flex items-center mb-8">
-        <Link to="/allblog" className="mr-4 lg:hidden">
-          <ChevronLeft className="w-8 h-8" />
-        </Link>
-        <h1 className="text-xl font-bold lg:hidden flex-grow text-center">{userData.name}</h1>
-      </div>
-
-      {/* Profile Info Section */}
-      <div className="flex flex-col md:flex-row items-center md:items-start md:space-x-20 mb-12">
-        <div className="w-32 h-32 md:w-40 md:h-40 bg-gray-200 rounded-full flex items-center justify-center text-4xl font-bold text-gray-400 mb-6 md:mb-0 border border-gray-100">
-          {userData.name[0].toUpperCase()}
+    <div className="min-h-screen bg-slate-50 pb-16">
+      <div className="mx-auto max-w-6xl px-4 pt-8">
+        <div className="mb-7 flex items-center gap-3">
+          <Link
+            to="/allblog"
+            className="inline-flex h-10 w-10 items-center justify-center text-slate-500 transition hover:text-slate-900"
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </Link>
+          <h1 className="text-lg font-semibold tracking-tight text-slate-900 md:text-2xl">Profile</h1>
         </div>
 
-        <div className="flex-grow space-y-6 text-center md:text-left">
-          <div className="flex flex-col md:flex-row items-center space-y-4 md:space-y-0 md:space-x-6">
-            <h2 className="text-2xl font-light">{userData.email.split('@')[0]}</h2>
-            <div className="flex space-x-2">
-              <button 
-                onClick={() => setIsEditing(!isEditing)}
-                className="bg-gray-50 border border-gray-300 rounded px-3 py-1.5 text-sm font-semibold hover:bg-gray-100 transition-colors"
-              >
-                {isEditing ? 'Cancel Edit' : 'Edit Profile'}
-              </button>
-              <Settings className="w-6 h-6 cursor-pointer" />
+        <section className="bg-white p-2 md:p-4">
+          <div className="flex flex-col gap-8 md:flex-row md:items-start md:justify-between">
+            <div className="flex flex-col items-center gap-6 md:flex-row md:items-center">
+              <div className="flex h-28 w-28 items-center justify-center rounded-full border border-slate-200 bg-slate-100 text-4xl font-semibold text-slate-600 md:h-36 md:w-36 md:text-5xl">
+                {userData.name[0].toUpperCase()}
+              </div>
+              <div className="text-center md:text-left">
+                <h2 className="text-3xl font-bold tracking-tight text-slate-900">{userData.name}</h2>
+                <p className="mt-1 text-sm font-medium text-slate-500">@{handle}</p>
+                <p className="mt-2 inline-flex items-center gap-2 text-sm text-slate-600">
+                  <Mail className="h-4 w-4 text-slate-400" />
+                  {userData.email}
+                </p>
+              </div>
             </div>
-          </div>
 
-          <div className="flex justify-center md:justify-start space-x-8 text-sm">
-            <span><strong>{posts.length}</strong> posts</span>
-            <span><strong>{savedPosts.length}</strong> saved</span>
-            <span><strong>{likedPosts.length}</strong> liked</span>
-            <span><strong>0</strong> followers</span>
-            <span><strong>0</strong> following</span>
-          </div>
-
-          <div className="text-sm">
-            <h3 className="font-semibold">{userData.name}</h3>
-            <p className="text-gray-500">{userData.email}</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Edit Form (Conditional) */}
-      {isEditing && (
-        <div className="bg-white border border-gray-300 p-6 rounded-sm mb-10 animate-in fade-in slide-in-from-top-4 duration-300">
-          <form onSubmit={handleUpdate} className="space-y-4 max-w-md">
-            <div className="flex flex-col space-y-1">
-              <label className="text-xs font-bold text-gray-500 uppercase">Display Name</label>
-              <input
-                type="text"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                className="border-b border-gray-200 py-2 focus:outline-none focus:border-blue-500 text-sm"
-                required
-              />
-            </div>
-            <div className="flex flex-col space-y-1">
-              <label className="text-xs font-bold text-gray-500 uppercase">Email Address</label>
-              <input
-                type="email"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                className="border-b border-gray-200 py-2 focus:outline-none focus:border-blue-500 text-sm"
-                required
-              />
-            </div>
-            <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded text-sm font-semibold hover:bg-blue-600">Save Changes</button>
-          </form>
-        </div>
-      )}
-
-      {/* Tabs */}
-      <div className="border-t border-gray-300 flex justify-center space-x-12">
-        <button
-          type="button"
-          onClick={() => setActiveTab('posts')}
-          className={`-mt-[1px] pt-4 flex items-center space-x-2 text-xs font-bold tracking-widest uppercase cursor-pointer ${
-            activeTab === 'posts' ? 'border-t border-black text-black' : 'text-gray-400'
-          }`}
-        >
-          <Grid className="w-3 h-3" />
-          <span>Posts</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab('saved')}
-          className={`pt-4 flex items-center space-x-2 text-xs font-bold tracking-widest uppercase cursor-pointer ${
-            activeTab === 'saved' ? 'border-t border-black text-black -mt-[1px]' : 'text-gray-400'
-          }`}
-        >
-          <Bookmark className="w-3 h-3" />
-          <span>Saved</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveTab('liked')}
-          className={`pt-4 flex items-center space-x-2 text-xs font-bold tracking-widest uppercase cursor-pointer ${
-            activeTab === 'liked' ? 'border-t border-black text-black -mt-[1px]' : 'text-gray-400'
-          }`}
-        >
-          <Heart className="w-3 h-3" />
-          <span>Liked Blogs</span>
-        </button>
-      </div>
-
-      {/* Posts Grid */}
-      <div className="grid grid-cols-3 gap-1 md:gap-8 mt-8">
-        {(activeTab === 'posts' ? posts : activeTab === 'saved' ? savedPosts : likedPosts).length === 0 ? (
-          <div className="col-span-3 text-center py-20 text-gray-500 italic">No posts yet.</div>
-        ) : (
-          (activeTab === 'posts' ? posts : activeTab === 'saved' ? savedPosts : likedPosts).map((post) => (
-            <div
-              key={post._id}
-              className="relative aspect-square bg-gray-100 border border-gray-200 group cursor-pointer overflow-hidden"
-              onClick={() => navigate(`/posts/${post._id}`)}
-            >
-               <div className="absolute inset-0 flex flex-col items-center justify-center p-2 text-center transition-transform duration-500 group-hover:scale-110">
-                  <h4 className="text-[10px] md:text-xs font-bold uppercase text-gray-400 mb-1">{post.category || 'BLOG'}</h4>
-                  <p className="text-xs md:text-lg font-serif italic text-gray-800 line-clamp-2 px-2">{post.title}</p>
-               </div>
-               {activeTab === 'posts' && (
-                 <div className="absolute right-2 top-2 flex gap-2 opacity-0 transition-opacity group-hover:opacity-100">
-                    <button
-                      type="button"
-                      className="rounded bg-white/90 p-1.5 text-gray-700 shadow hover:bg-white"
-                      onClick={(event) => startEditPost(post, event)}
-                    >
-                      <Pencil className="h-4 w-4" />
-                    </button>
-                    <button
-                      type="button"
-                      className="rounded bg-white/90 p-1.5 text-red-600 shadow hover:bg-white"
-                      onClick={(event) => handlePostDelete(post._id, event)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
-                 </div>
-               )}
-               <div className="pointer-events-none absolute inset-0 bg-black/10 opacity-0 transition-opacity group-hover:opacity-100" />
-            </div>
-          ))
-        )}
-      </div>
-
-      {message && <p className="mt-6 text-sm font-semibold text-green-600">{message}</p>}
-
-      {isPostEditing && activeTab === 'posts' && (
-        <div className="mt-10 rounded-sm border border-gray-300 bg-white p-6">
-          <h3 className="mb-4 text-lg font-semibold">Edit Post</h3>
-          <form onSubmit={handlePostUpdate} className="space-y-4">
-            <div>
-              <label className="mb-1 block text-xs font-bold uppercase text-gray-500">Title</label>
-              <input
-                type="text"
-                value={postForm.title}
-                onChange={(event) => setPostForm({ ...postForm, title: event.target.value })}
-                className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-                required
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs font-bold uppercase text-gray-500">Category</label>
-              <input
-                type="text"
-                value={postForm.category}
-                onChange={(event) => setPostForm({ ...postForm, category: event.target.value })}
-                className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs font-bold uppercase text-gray-500">Content</label>
-              <textarea
-                value={postForm.content}
-                onChange={(event) => setPostForm({ ...postForm, content: event.target.value })}
-                className="min-h-[180px] w-full rounded border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-                required
-              />
-            </div>
-            <div className="flex gap-3">
+            <div className="flex flex-wrap items-center justify-center gap-2 md:justify-end">
               <button
-                type="submit"
-                className="rounded bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700"
+                type="button"
+                onClick={() => setIsEditing(!isEditing)}
+                className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-slate-600 transition hover:text-slate-900"
               >
-                Update Post
+                <PencilLine className="h-4 w-4" />
+                {isEditing ? 'Cancel Edit' : 'Edit Profile'}
               </button>
               <button
                 type="button"
-                className="rounded border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
-                onClick={() => {
-                  setIsPostEditing(false);
-                  setEditingPostId('');
-                  setPostForm({ title: '', category: '', content: '' });
-                }}
+                className="inline-flex h-10 w-10 items-center justify-center text-slate-500 transition hover:text-slate-900"
               >
-                Cancel
+                <Settings className="h-[18px] w-[18px]" />
               </button>
             </div>
-          </form>
+          </div>
+
+          <div className="mt-8 flex flex-wrap items-center gap-8 border-t border-slate-200 pt-5 text-sm">
+            <p className="text-slate-600"><span className="font-semibold text-slate-900">{posts.length}</span> posts</p>
+            <p className="text-slate-600"><span className="font-semibold text-slate-900">{savedPosts.length}</span> saved</p>
+            <p className="text-slate-600"><span className="font-semibold text-slate-900">{likedPosts.length}</span> liked</p>
+          </div>
+        </section>
+
+        {isEditing && (
+          <div className="mt-6 border-t border-slate-200 bg-white p-6">
+            <form onSubmit={handleUpdate} className="grid gap-4 md:max-w-xl">
+              <div className="space-y-1">
+                <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">Display Name</label>
+                <input
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:border-slate-400 focus:outline-none"
+                  required
+                />
+              </div>
+              <div className="space-y-1">
+                <label className="text-xs font-semibold uppercase tracking-wide text-slate-500">Email Address</label>
+                <input
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:border-slate-400 focus:outline-none"
+                  required
+                />
+              </div>
+              <button type="submit" className="mt-1 inline-flex w-fit items-center rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800">
+                Save Changes
+              </button>
+            </form>
+          </div>
+        )}
+
+        <div className="mt-8 border-b border-slate-200">
+          <div className="grid grid-cols-3 gap-2">
+            <button
+              type="button"
+              onClick={() => setActiveTab('posts')}
+              className={`inline-flex items-center justify-center gap-2 border-b-2 px-3 py-3 text-sm font-medium transition ${
+                activeTab === 'posts'
+                  ? 'border-slate-900 text-slate-900'
+                  : 'border-transparent text-slate-500 hover:text-slate-900'
+              }`}
+            >
+              <LayoutGrid className="h-4 w-4" />
+              Posts
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('saved')}
+              className={`inline-flex items-center justify-center gap-2 border-b-2 px-3 py-3 text-sm font-medium transition ${
+                activeTab === 'saved'
+                  ? 'border-slate-900 text-slate-900'
+                  : 'border-transparent text-slate-500 hover:text-slate-900'
+              }`}
+            >
+              <Bookmark className="h-4 w-4" />
+              Saved
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('liked')}
+              className={`inline-flex items-center justify-center gap-2 border-b-2 px-3 py-3 text-sm font-medium transition ${
+                activeTab === 'liked'
+                  ? 'border-slate-900 text-slate-900'
+                  : 'border-transparent text-slate-500 hover:text-slate-900'
+              }`}
+            >
+              <Heart className="h-4 w-4" />
+              Liked
+            </button>
+          </div>
         </div>
-      )}
+
+        <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {visiblePosts.length === 0 ? (
+            <div className="col-span-full rounded-2xl border border-slate-200 bg-white px-6 py-16 text-center text-sm text-slate-500">
+              No posts yet.
+            </div>
+          ) : (
+            visiblePosts.map((post) => (
+              <div
+                key={post._id}
+                className="group relative overflow-hidden rounded-2xl border border-slate-200 bg-white transition hover:-translate-y-0.5"
+                onClick={() => navigate(`/posts/${post._id}`)}
+              >
+                <div className="relative aspect-[4/3] bg-gradient-to-br from-slate-100 via-slate-200 to-slate-300">
+                  {post.imageUrl && (
+                    <img
+                      src={post.imageUrl}
+                      alt={post.title}
+                      className="h-full w-full object-cover"
+                      onError={(event) => {
+                        event.currentTarget.style.display = 'none';
+                      }}
+                    />
+                  )}
+                  <div className="absolute inset-0 bg-black/20" />
+                  {activeTab === 'posts' && (
+                    <div className="absolute right-3 top-3 z-10 flex gap-2 opacity-0 transition-opacity group-hover:opacity-100">
+                      <button
+                        type="button"
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-white/60 bg-white/90 text-slate-700 shadow-sm transition hover:bg-white"
+                        onClick={(event) => startEditPost(post, event)}
+                      >
+                        <PencilLine className="h-4 w-4" />
+                      </button>
+                      <button
+                        type="button"
+                        className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-white/60 bg-white/90 text-rose-600 shadow-sm transition hover:bg-white"
+                        onClick={(event) => handlePostDelete(post._id, event)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  )}
+                  <div className="absolute inset-x-0 bottom-0 p-4 text-white">
+                    <p className="mb-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-white/90">{post.category || 'Blog'}</p>
+                    <h4 className="line-clamp-2 text-lg font-semibold leading-snug">{post.title}</h4>
+                  </div>
+                </div>
+                <div className="flex items-center justify-between px-4 py-3 text-xs text-slate-500">
+                  <span className="inline-flex items-center gap-1">
+                    <UserRound className="h-3.5 w-3.5" />
+                    {post.author?.name || userData.name}
+                  </span>
+                  <span className="inline-flex items-center gap-1">
+                    <FileText className="h-3.5 w-3.5" />
+                    {(post.comments?.length || 0)} comments
+                  </span>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+
+        {message && <p className="mt-4 text-sm font-semibold text-emerald-600">{message}</p>}
+
+        {isPostEditing && activeTab === 'posts' && (
+          <div className="mt-8 border-t border-slate-200 bg-white p-6">
+            <h3 className="mb-4 text-lg font-semibold text-slate-900">Edit Post</h3>
+            <form onSubmit={handlePostUpdate} className="space-y-4">
+              <div>
+                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Title</label>
+                <input
+                  type="text"
+                  value={postForm.title}
+                  onChange={(event) => setPostForm({ ...postForm, title: event.target.value })}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:border-slate-400 focus:outline-none"
+                  required
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Category</label>
+                <input
+                  type="text"
+                  value={postForm.category}
+                  onChange={(event) => setPostForm({ ...postForm, category: event.target.value })}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:border-slate-400 focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Content</label>
+                <textarea
+                  value={postForm.content}
+                  onChange={(event) => setPostForm({ ...postForm, content: event.target.value })}
+                  className="min-h-[180px] w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-800 focus:border-slate-400 focus:outline-none"
+                  required
+                />
+              </div>
+              <div className="flex gap-3">
+                <button
+                  type="submit"
+                  className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800"
+                >
+                  Update Post
+                </button>
+                <button
+                  type="button"
+                  className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50"
+                  onClick={() => {
+                    setIsPostEditing(false);
+                    setEditingPostId('');
+                    setPostForm({ title: '', category: '', content: '' });
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

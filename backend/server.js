@@ -38,6 +38,7 @@ const postSchema = new mongoose.Schema({
   title: { type: String, required: true },
   content: { type: String, required: true },
   category: { type: String },
+  imageUrl: { type: String, default: '' },
   author: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   likedBy: {
     type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
@@ -57,10 +58,149 @@ const postSchema = new mongoose.Schema({
 
 const Post = mongoose.model('Post', postSchema)
 
+const demoUserSeeds = [
+  { email: 'demo@metaverse.app', name: 'Metaverse Demo', password: 'demo12345' },
+  { email: 'aisha@metaverse.app', name: 'Aisha Khan', password: 'demo12345' },
+  { email: 'ryan@metaverse.app', name: 'Ryan Park', password: 'demo12345' },
+  { email: 'kavya@metaverse.app', name: 'Kavya Mehta', password: 'demo12345' }
+]
+
+const demoBlogSeeds = [
+  {
+    title: 'Morning Walks in the Himalayas',
+    category: 'Travel',
+    imageUrl: 'https://images.pexels.com/photos/417173/pexels-photo-417173.jpeg',
+    content: 'The mountain air at sunrise feels like a reset button for the mind. I spent a week hiking through quiet trails, small villages, and pine forests. Every morning reminded me that a slower pace can still be deeply productive.',
+    authorEmail: 'demo@metaverse.app',
+    likedByEmails: ['aisha@metaverse.app', 'ryan@metaverse.app'],
+    comments: [
+      { userEmail: 'aisha@metaverse.app', content: 'This made me want to plan a trek right away. Loved the vibe!' },
+      { userEmail: 'kavya@metaverse.app', content: 'Beautifully written. Slow mornings in the hills are unmatched.' }
+    ]
+  },
+  {
+    title: 'Designing Calm Workspaces for Focus',
+    category: 'Productivity',
+    imageUrl: 'https://images.pexels.com/photos/245032/pexels-photo-245032.jpeg',
+    content: 'A clean desk, warm lighting, and fewer distractions changed how I work. Instead of chasing more tools, I redesigned my environment. The result was simple: better focus, fewer interruptions, and less stress by the end of the day.',
+    authorEmail: 'aisha@metaverse.app',
+    likedByEmails: ['demo@metaverse.app', 'kavya@metaverse.app', 'ryan@metaverse.app'],
+    comments: [
+      { userEmail: 'demo@metaverse.app', content: 'Minimal setup + warm light is such a winning combo.' }
+    ]
+  },
+  {
+    title: 'A Weekend Guide to Street Photography',
+    category: 'Photography',
+    imageUrl: 'https://images.pexels.com/photos/91227/pexels-photo-91227.jpeg',
+    content: 'Street photography is less about expensive gear and more about noticing moments. I walked through old markets and busy corners with a small camera, waiting for light, movement, and emotion to align. The best shots came from patience.',
+    authorEmail: 'ryan@metaverse.app',
+    likedByEmails: ['demo@metaverse.app', 'aisha@metaverse.app'],
+    comments: [
+      { userEmail: 'kavya@metaverse.app', content: 'Patience really is everything with street shots. Great tips.' },
+      { userEmail: 'demo@metaverse.app', content: 'The market shots section was my favorite part.' }
+    ]
+  },
+  {
+    title: 'Why Deep Work Beats Constant Multitasking',
+    category: 'Technology',
+    imageUrl: 'https://images.pexels.com/photos/1181244/pexels-photo-1181244.jpeg',
+    content: 'Multitasking feels productive but often creates shallow output. I tried two-hour deep-work blocks with notifications off, and the difference was dramatic. Fewer context switches led to better code quality and clearer decisions.',
+    authorEmail: 'kavya@metaverse.app',
+    likedByEmails: ['demo@metaverse.app', 'ryan@metaverse.app', 'aisha@metaverse.app'],
+    comments: [
+      { userEmail: 'ryan@metaverse.app', content: 'Deep work blocks improved my coding sessions too.' }
+    ]
+  },
+  {
+    title: 'Sunset Cafes and Quiet Journaling',
+    category: 'Lifestyle',
+    imageUrl: 'https://images.pexels.com/photos/302899/pexels-photo-302899.jpeg',
+    content: 'I spent the last month trying a simple ritual: one coffee, one notebook, no phone for thirty minutes. The habit brought clarity and helped me process ideas that usually get lost in busy schedules.',
+    authorEmail: 'demo@metaverse.app',
+    likedByEmails: ['aisha@metaverse.app', 'kavya@metaverse.app'],
+    comments: [
+      { userEmail: 'aisha@metaverse.app', content: 'I am trying this tomorrow. Sounds super calming.' }
+    ]
+  },
+  {
+    title: 'Building Better Habits with Tiny Steps',
+    category: 'Self Growth',
+    imageUrl: 'https://images.pexels.com/photos/1552242/pexels-photo-1552242.jpeg',
+    content: 'Big goals become easier when broken into tiny daily actions. I started with ten-minute learning sessions and simple checklists. Consistency over intensity made the biggest difference over time.',
+    authorEmail: 'aisha@metaverse.app',
+    likedByEmails: ['demo@metaverse.app', 'ryan@metaverse.app'],
+    comments: [
+      { userEmail: 'kavya@metaverse.app', content: 'Tiny steps are underrated. This was really practical.' }
+    ]
+  },
+  {
+    title: 'City Rain, Neon Lights, and Late-Night Walks',
+    category: 'Culture',
+    imageUrl: 'https://images.pexels.com/photos/1707828/pexels-photo-1707828.jpeg',
+    content: 'Some cities feel most alive after rain. Reflections from neon signs, quiet roads, and cool air make every walk cinematic. These moments reminded me to notice beauty in ordinary nights.',
+    authorEmail: 'ryan@metaverse.app',
+    likedByEmails: ['demo@metaverse.app', 'aisha@metaverse.app', 'kavya@metaverse.app'],
+    comments: [
+      { userEmail: 'demo@metaverse.app', content: 'The imagery in this one is amazing.' },
+      { userEmail: 'aisha@metaverse.app', content: 'Now I want to do a rainy night photo walk.' }
+    ]
+  }
+]
+
+const seedDemoPosts = async () => {
+  const usersByEmail = new Map()
+
+  for (const userSeed of demoUserSeeds) {
+    let user = await User.findOne({ email: userSeed.email })
+    if (!user) {
+      const hashedPassword = await bcrypt.hash(userSeed.password, 10)
+      user = await User.create({
+        email: userSeed.email,
+        password: hashedPassword,
+        name: userSeed.name
+      })
+    }
+    usersByEmail.set(userSeed.email, user)
+  }
+
+  // Keep the feed demo-only on startup.
+  await Post.deleteMany({})
+  await User.updateMany({}, { $set: { savedPosts: [] } })
+
+  const postsToInsert = demoBlogSeeds.map((postSeed) => {
+    const author = usersByEmail.get(postSeed.authorEmail)
+    const likedBy = postSeed.likedByEmails
+      .map((email) => usersByEmail.get(email)?._id)
+      .filter(Boolean)
+    const comments = postSeed.comments
+      .map((comment) => {
+        const commentUser = usersByEmail.get(comment.userEmail)
+        if (!commentUser) return null
+        return { user: commentUser._id, content: comment.content }
+      })
+      .filter(Boolean)
+
+    return {
+      title: postSeed.title,
+      content: postSeed.content,
+      category: postSeed.category,
+      imageUrl: postSeed.imageUrl,
+      author: author?._id,
+      likedBy,
+      comments
+    }
+  }).filter((post) => Boolean(post.author))
+
+  await Post.insertMany(postsToInsert)
+}
+
 if (mongoUrl) {
-  mongoose.connect(mongoUrl).catch((error) => {
-    console.error('MongoDB connection error', error)
-  })
+  mongoose.connect(mongoUrl)
+    .then(() => seedDemoPosts())
+    .catch((error) => {
+      console.error('MongoDB connection error', error)
+    })
 } else {
   console.warn('MONGODB_URI is not set')
 }
@@ -150,11 +290,12 @@ app.put('/api/users/me', auth, async (req, res) => {
 // Post Routes
 app.post('/api/posts', auth, async (req, res) => {
   try {
-    const { title, content, category } = req.body
+    const { title, content, category, imageUrl } = req.body
     const post = new Post({
       title,
       content,
       category,
+      imageUrl: imageUrl?.trim() || '',
       author: req.userId
     })
     await post.save()
@@ -250,7 +391,7 @@ app.post('/api/posts/:id/comments', auth, async (req, res) => {
 app.put('/api/posts/:id', auth, async (req, res) => {
   try {
     const { id } = req.params
-    const { title, content, category } = req.body
+    const { title, content, category, imageUrl } = req.body
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({ message: 'Invalid post id' })
     }
@@ -269,6 +410,7 @@ app.put('/api/posts/:id', auth, async (req, res) => {
     post.title = title.trim()
     post.content = content.trim()
     post.category = category?.trim() || ''
+    post.imageUrl = imageUrl?.trim() || ''
     post.updatedAt = new Date()
     await post.save()
 

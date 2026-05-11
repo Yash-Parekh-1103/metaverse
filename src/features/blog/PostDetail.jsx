@@ -100,9 +100,20 @@ const PostDetail = () => {
 
       <article className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
         <div className="relative flex h-72 items-center justify-center bg-gradient-to-br from-indigo-100 via-purple-100 to-pink-100 p-8 text-center md:h-96">
-          <div>
-            <p className="mb-3 text-xs font-bold uppercase tracking-[0.3em] text-gray-500">{post.category || 'BLOG'}</p>
-            <h1 className="text-3xl font-bold text-gray-900 md:text-5xl">{post.title}</h1>
+          {post.imageUrl && (
+            <img
+              src={post.imageUrl}
+              alt={post.title}
+              className="absolute inset-0 h-full w-full object-cover"
+              onError={(event) => {
+                event.currentTarget.style.display = 'none';
+              }}
+            />
+          )}
+          <div className={`absolute inset-0 ${post.imageUrl ? 'bg-slate-900/40' : 'bg-transparent'}`} />
+          <div className="relative z-10">
+            <p className={`mb-3 text-xs font-bold uppercase tracking-[0.3em] ${post.imageUrl ? 'text-slate-100' : 'text-gray-500'}`}>{post.category || 'BLOG'}</p>
+            <h1 className={`text-3xl font-bold md:text-5xl ${post.imageUrl ? 'text-white' : 'text-gray-900'}`}>{post.title}</h1>
           </div>
         </div>
 
